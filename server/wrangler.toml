@@ -10,3 +10,4 @@ compatibility_date = "2025-01-01"
 [vars]
 LIVEKIT_URL = "wss://srk-meet-6n4nciq0.livekit.cloud"
 LIVEKIT_API_KEY = "APIQnxPPJ6GZhGT"
+# first deploy
