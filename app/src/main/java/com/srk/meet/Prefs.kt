@@ -22,7 +22,7 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString("name", v.trim()).apply()
 
     var serverUrl: String
-        get() = (sp.getString("server", null) ?: BuildConfig.DEFAULT_SERVER_URL).trim().trimEnd('/')
+        get() = (sp.getString("server", null)?.takeIf { it.isNotBlank() } ?: BuildConfig.DEFAULT_SERVER_URL).trim().trimEnd('/')
         set(v) = sp.edit().putString("server", v.trim().trimEnd('/')).apply()
 
     var startWithCamera: Boolean

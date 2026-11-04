@@ -32,7 +32,7 @@ class Api(private val baseUrl: String) {
     suspend fun mute(code: String, hostKey: String, identity: String) = hostAction("/api/mute", code, hostKey, identity)
     suspend fun end(code: String, hostKey: String) = hostAction("/api/end", code, hostKey, null)
 
-    fun inviteLink(code: String) = "$baseUrl/j/$code"
+    fun inviteLink(code: String) = "$baseUrl/join.html?c=$code"
 
     private suspend fun hostAction(path: String, code: String, hostKey: String, identity: String?) {
         val body = JSONObject().put("code", code).put("hostKey", hostKey)

@@ -12,10 +12,10 @@ android {
         applicationId = "com.srk.meet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
         // Optional: bake in your server URL so users don't have to type it.
-        buildConfigField("String", "DEFAULT_SERVER_URL", "\"${System.getenv("SRK_MEET_SERVER_URL") ?: ""}\"")
+        buildConfigField("String", "DEFAULT_SERVER_URL", "\"${System.getenv("SRK_MEET_SERVER_URL")?.takeIf { it.isNotBlank() } ?: "https://srk-meet-server.hatchable.site"}\"")
     }
 
     buildTypes {
