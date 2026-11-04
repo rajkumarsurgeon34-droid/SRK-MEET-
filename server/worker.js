@@ -137,6 +137,8 @@ async function handle(request, env) {
     if (path === "/") return json({ ok: true, service: "srk-meet", configured: !!(env.LIVEKIT_URL && env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET) });
     const m = path.match(/^\/j\/([a-z-]+)$/);
     if (m && CODE_RE.test(m[1])) return joinPage(m[1]);
+    const c = (url.searchParams.get("c") || "").toLowerCase();
+    if ((path === "/join.html" || path === "/join") && CODE_RE.test(c)) return joinPage(c);
     return json({ error: "Not found" }, 404);
   }
   if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
