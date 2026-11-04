@@ -8,6 +8,7 @@ import android.provider.CalendarContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -347,18 +349,37 @@ private fun ScheduleDialog(busy: Boolean, onDismiss: () -> Unit, onSchedule: (St
                 OutlinedTextField(title, { title = it.take(60) }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { pickDate(context, start) { start = it } }, modifier = Modifier.weight(1f)) {
-                        Text(SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date(start)))
+                    OutlinedButton(
+                        onClick = { pickDate(context, start) { start = it } },
+                        modifier = Modifier.weight(1.2f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    ) {
+                        Text(SimpleDateFormat("d MMM", Locale.getDefault()).format(Date(start)), maxLines = 1, softWrap = false)
                     }
-                    OutlinedButton(onClick = { pickTime(context, start) { start = it } }, modifier = Modifier.weight(1f)) {
-                        Text(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(start)))
+                    OutlinedButton(
+                        onClick = { pickTime(context, start) { start = it } },
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+                    ) {
+                        Text(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(start)), maxLines = 1, softWrap = false)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
                 Text("Duration", color = Palette.Muted, fontSize = 13.sp)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(30, 60, 90, 120).forEach { d ->
-                        FilterChip(selected = duration == d, onClick = { duration = d }, label = { Text(if (d < 60) "$d m" else "${d / 60.0}".removeSuffix(".0") + " h") })
+                        FilterChip(
+                            selected = duration == d,
+                            onClick = { duration = d },
+                            modifier = Modifier.weight(1f),
+                            label = {
+                                Text(
+                                    if (d < 60) "${d}m" else "${d / 60.0}".removeSuffix(".0") + "h",
+                                    maxLines = 1, softWrap = false,
+                                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                                )
+                            },
+                        )
                     }
                 }
                 Spacer(Modifier.height(6.dp))
