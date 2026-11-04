@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src 'self' file: data: blob:; media-src 'self' file: blob: mediastream:; connect-src https: wss:">
+  <title>SRK Meet</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ HOME ============ -->
+<section id="home" class="screen">
+  <header class="topbar">
+    <div class="brand"><img src="icon.png" alt=""><span>SRK Meet</span></div>
+    <div class="topbar-right">
+      <span id="hello" class="muted"></span>
+      <button class="icon-btn" id="openSettings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <div id="serverCard" class="banner hidden">
+    <b>Set your meeting server</b> — open Settings and paste your server address.
+    <button class="btn small" id="bannerSettings">Open Settings</button>
+  </div>
+
+  <main class="home-grid">
+    <div class="col">
+      <div class="card">
+        <h2>Start a meeting</h2>
+        <input id="newTitle" placeholder="Meeting title (optional)" maxlength="60">
+        <label class="switch"><input type="checkbox" id="newWaiting"><span></span> Waiting room — you let people in</label>
+        <button class="btn primary big" id="startBtn">📹 Start now</button>
+      </div>
+
+      <div class="card">
+        <h2>Join a meeting</h2>
+        <input id="joinCode" placeholder="Code, like abc-defg-hij, or an invite link" spellcheck="false">
+        <button class="btn big" id="joinBtn">Join</button>
+      </div>
+
+      <div class="card">
+        <h2>Schedule</h2>
+        <input id="schTitle" placeholder="Meeting title" maxlength="60">
+        <div class="row">
+          <input id="schWhen" type="datetime-local">
+          <select id="schDur">
+            <option value="15">15 min</option><option value="30">30 min</option>
+            <option value="45">45 min</option><option value="60" selected>1 hour</option>
+            <option value="90">1½ hours</option><option value="120">2 hours</option>
+          </select>
+        </div>
+        <label class="switch"><input type="checkbox" id="schWaiting"><span></span> Waiting room</label>
+        <button class="btn big" id="scheduleBtn">🗓️ Schedule</button>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card preview-card">
+        <div class="preview">
+          <video id="previewVideo" autoplay muted playsinline></video>
+          <div id="previewOff" class="preview-off"><div class="avatar big" id="previewAvatar">?</div><p>Camera is off</p></div>
+        </div>
+        <div class="preview-controls">
+          <button class="round" id="pvMic" title="Microphone">🎤</button>
+          <button class="round" id="pvCam" title="Camera">📷</button>
+        </div>
+        <p class="muted small center">This is how you'll join. Change devices in Settings.</p>
+      </div>
+
+      <div class="card">
+        <h2>Upcoming</h2>
+        <div id="upcoming" class="upcoming"></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ============ CONNECTING / WAITING / ENDED ============ -->
+<section id="status" class="screen hidden">
+  <div class="status-box">
+    <div id="statusSpinner" class="spinner"></div>
+    <div id="statusIcon" class="status-icon hidden"></div>
+    <h2 id="statusTitle">Connecting…</h2>
+    <p id="statusText" class="muted"></p>
+    <div class="row center">
+      <button class="btn" id="statusCancel">Cancel</button>
+      <button class="btn primary hidden" id="statusHome">Back to home</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ IN A CALL ============ -->
+<section id="call" class="screen hidden">
+  <header class="call-top">
+    <div class="call-title">
+      <b id="callTitle">Meeting</b>
+      <span class="muted" id="callCode"></span>
+    </div>
+    <div class="call-top-right">
+      <span id="callTimer" class="pill">00:00</span>
+      <span id="callCount" class="pill">👥 1</span>
+      <button class="btn small" id="inviteBtn">🔗 Invite</button>
+    </div>
+  </header>
+
+  <div class="call-body">
+    <div id="stage" class="stage">
+      <div id="screenArea" class="screen-area hidden">
+        <video id="screenVideo" autoplay playsinline></video>
+        <div class="screen-label" id="screenLabel"></div>
+      </div>
+      <div id="tiles" class="tiles"></div>
+      <div id="reactions" class="reactions"></div>
+    </div>
+
+    <aside id="panel" class="panel hidden">
+      <div class="panel-tabs">
+        <button data-tab="chat" class="tab active">Chat</button>
+        <button data-tab="people" class="tab">People</button>
+        <button class="icon-btn" id="closePanel" title="Close">✕</button>
+      </div>
+      <div id="tabChat" class="tab-body">
+        <div id="chatList" class="chat-list"><p class="muted small center">Messages are only seen by people in the meeting.</p></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" placeholder="Send a message" maxlength="2000" autocomplete="off">
+          <button class="btn primary" type="submit">Send</button>
+        </form>
+      </div>
+      <div id="tabPeople" class="tab-body hidden">
+        <div id="hostTools" class="host-tools hidden">
+          <button class="btn small" id="muteAllBtn">🔇 Mute everyone</button>
+          <button class="btn small hidden" id="admitAllBtn">✅ Admit all</button>
+        </div>
+        <div id="waitingList"></div>
+        <div id="peopleList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="controls">
+    <div class="ctl-group">
+      <button class="ctl" id="micBtn"><span class="i">🎤</span><span class="l">Mute</span></button>
+      <button class="ctl" id="camBtn"><span class="i">📷</span><span class="l">Stop video</span></button>
+      <button class="ctl" id="shareBtn"><span class="i">🖥️</span><span class="l">Share screen</span></button>
+    </div>
+    <div class="ctl-group">
+      <button class="ctl" id="handBtn"><span class="i">✋</span><span class="l">Raise hand</span></button>
+      <div class="react-wrap">
+        <button class="ctl" id="reactBtn"><span class="i">😀</span><span class="l">React</span></button>
+        <div id="reactMenu" class="react-menu hidden">
+          <button>👍</button><button>👏</button><button>❤️</button><button>😂</button><button>😮</button><button>🎉</button>
+        </div>
+      </div>
+      <button class="ctl" id="chatBtn"><span class="i">💬</span><span class="l">Chat</span><span id="chatBadge" class="badge hidden">0</span></button>
+      <button class="ctl" id="peopleBtn"><span class="i">👥</span><span class="l">People</span><span id="waitBadge" class="badge hidden">0</span></button>
+    </div>
+    <div class="ctl-group">
+      <button class="ctl leave" id="leaveBtn"><span class="i">📞</span><span class="l">Leave</span></button>
+    </div>
+  </footer>
+</section>
+
+<!-- ============ DIALOGS ============ -->
+<dialog id="settingsDlg" class="dlg">
+  <form method="dialog">
+    <h2>Settings</h2>
+    <label>Your name<input id="setName" maxlength="40" placeholder="Shown to others in meetings"></label>
+    <label>Meeting server<input id="setServer" spellcheck="false" placeholder="https://srk-meet.yourname.workers.dev"></label>
+    <label>Camera<select id="setCam"></select></label>
+    <label>Microphone<select id="setMic"></select></label>
+    <label>Speaker<select id="setSpk"></select></label>
+    <label class="switch"><input type="checkbox" id="setStartMic"><span></span> Join with microphone on</label>
+    <label class="switch"><input type="checkbox" id="setStartCam"><span></span> Join with camera on</label>
+    <p id="setCheck" class="muted small"></p>
+    <div class="row end">
+      <button class="btn" value="cancel">Cancel</button>
+      <button class="btn primary" id="saveSettings" value="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="nameDlg" class="dlg">
+  <form method="dialog">
+    <h2>Welcome to SRK Meet</h2>
+    <p class="muted">What name should people see in meetings?</p>
+    <input id="firstName" maxlength="40" placeholder="Your name" required>
+    <div class="row end"><button class="btn primary" value="ok">Continue</button></div>
+  </form>
+</dialog>
+
+<dialog id="shareDlg" class="dlg wide">
+  <h2>Share your screen</h2>
+  <p class="muted small">Pick a whole screen or one window.</p>
+  <div id="sourceList" class="source-list"></div>
+  <div class="row end"><button class="btn" id="shareCancel">Cancel</button></div>
+</dialog>
+
+<dialog id="inviteDlg" class="dlg">
+  <h2>Invite people</h2>
+  <pre id="inviteText" class="invite-text"></pre>
+  <div class="row end">
+    <button class="btn" id="inviteClose">Close</button>
+    <button class="btn primary" id="inviteCopy">Copy invite</button>
+  </div>
+</dialog>
+
+<dialog id="leaveDlg" class="dlg">
+  <h2>Leave the meeting?</h2>
+  <p class="muted">You're the host. You can leave and let the others carry on, or end it for everyone.</p>
+  <div class="row end">
+    <button class="btn" id="leaveCancel">Stay</button>
+    <button class="btn" id="leaveOnly">Leave</button>
+    <button class="btn danger" id="endAll">End for everyone</button>
+  </div>
+</dialog>
+
+<div id="toasts" class="toasts"></div>
+
+<script type="module" src="app.bundle.js"></script>
+</body>
+</html>

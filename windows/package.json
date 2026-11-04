@@ -1,0 +1,47 @@
+{
+  "name": "srk-meet",
+  "productName": "SRK Meet",
+  "version": "1.0.0",
+  "description": "SRK Meet video meetings for Windows",
+  "author": "ShazVerse Technologies",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "bundle": "esbuild src/app.js --bundle --format=esm --target=chrome120 --outfile=renderer/app.bundle.js",
+    "start": "npm run bundle && electron .",
+    "dist": "npm run bundle && electron-builder --win nsis --x64 --publish never"
+  },
+  "dependencies": {
+    "livekit-client": "^2.15.0"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12",
+    "esbuild": "^0.25.0"
+  },
+  "build": {
+    "appId": "com.srk.meet",
+    "productName": "SRK Meet",
+    "artifactName": "SRK-Meet-Setup.exe",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "protocols": [{ "name": "SRK Meet", "schemes": ["srkmeet"] }],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "SRK Meet"
+    }
+  }
+}

@@ -50,6 +50,17 @@ The **server** (`server/worker.js`) is tiny and stateless. It holds your LiveKit
 ### 4. First launch
 Enter your name, then tap the yellow **meeting server** card (or ⚙️ Settings) and paste your server address if you didn't pre-fill it.
 
+## SRK Meet for Windows
+
+The `windows/` folder is the Windows 10/11 app. It uses the same meeting server, so Windows and Android people join the same meetings.
+
+- **Download:** repo **Releases** → **SRK Meet for Windows** → `SRK-Meet-Setup.exe`. Run it to install (Start menu + desktop shortcut).
+- First time, Windows may say "Windows protected your PC" — click **More info → Run anyway** (the app isn't code-signed yet).
+- Built automatically by GitHub Actions (`Build Windows app`) whenever anything in `windows/` changes. The APK build only runs for Android changes.
+- Same features as Android: start, join, schedule (with an .ics calendar file), waiting room, host controls, chat, reactions, raise hand, screen or window sharing, and camera/mic/speaker choice in Settings.
+- Shortcuts in a call: **Ctrl+D** mute/unmute, **Ctrl+E** camera on/off.
+- If the camera or mic doesn't work: Windows Settings → Privacy & security → Camera / Microphone → allow desktop apps.
+
 ## Using it
 
 - **New meeting** → optional title, waiting room on/off → Start. Share the invite from the top bar.

@@ -1,0 +1,49 @@
+name: Build Windows app
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "windows/**"
+      - ".github/workflows/build-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Build installer
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run dist
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: SRK-Meet-Windows
+          path: windows/dist/SRK-Meet-Setup.exe
+
+      - name: Publish download (Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: windows-${{ github.run_number }}
+          name: SRK Meet for Windows ${{ github.run_number }}
+          make_latest: "false"
+          body: |
+            Download **SRK-Meet-Setup.exe** and run it to install SRK Meet on Windows 10 or 11.
+            If Windows shows "Windows protected your PC", click **More info → Run anyway** (the app isn't code-signed yet).
+          files: windows/dist/SRK-Meet-Setup.exe
