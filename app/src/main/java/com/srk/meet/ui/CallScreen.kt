@@ -176,7 +176,7 @@ private fun WaitingRoom(vm: CallViewModel) {
 @Composable
 private fun InCall(vm: CallViewModel, requestScreenShare: () -> Unit) {
     val room = vm.room ?: return
-    @Suppress("UNUSED_VARIABLE") val tick = vm.tick // re-read participants on every room event
+    val tick = vm.tick // changes on every room event; passed down so tiles redraw
     val local = room.localParticipant
     val everyone: List<Participant> = listOf<Participant>(local) +
         room.remoteParticipants.values.filter { !it.isWaiting() }.sortedBy { it.displayName().lowercase() }
@@ -192,9 +192,9 @@ private fun InCall(vm: CallViewModel, requestScreenShare: () -> Unit) {
         TopBar(vm, everyone.size, waiting.size) { sheet = Sheet.People }
         Box(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 8.dp)) {
             if (sharer != null) {
-                ScreenShareStage(room, sharer, everyone)
+                ScreenShareStage(room, sharer, everyone, tick)
             } else {
-                ParticipantGrid(room, everyone)
+                ParticipantGrid(room, everyone, tick)
             }
             ReactionsOverlay(vm.reactions)
         }
@@ -275,19 +275,19 @@ private fun TopBar(vm: CallViewModel, count: Int, waitingCount: Int, onPeople: (
 }
 
 @Composable
-private fun ParticipantGrid(room: Room, people: List<Participant>) {
+private fun ParticipantGrid(room: Room, people: List<Participant>, tick: Int) {
     val n = people.size
     when {
-        n == 1 -> Tile(room, people[0], Modifier.fillMaxSize().padding(4.dp))
+        n == 1 -> Tile(room, people[0], tick, Modifier.fillMaxSize().padding(4.dp))
         n == 2 -> Column(Modifier.fillMaxSize()) {
-            people.forEach { p -> key(p.identityValue()) { Tile(room, p, Modifier.weight(1f).fillMaxWidth().padding(4.dp)) } }
+            people.forEach { p -> key(p.identityValue()) { Tile(room, p, tick, Modifier.weight(1f).fillMaxWidth().padding(4.dp)) } }
         }
         n <= 6 -> {
             val rows = people.chunked(2)
             Column(Modifier.fillMaxSize()) {
                 rows.forEach { row ->
                     Row(Modifier.weight(1f).fillMaxWidth()) {
-                        row.forEach { p -> key(p.identityValue()) { Tile(room, p, Modifier.weight(1f).fillMaxHeight().padding(4.dp)) } }
+                        row.forEach { p -> key(p.identityValue()) { Tile(room, p, tick, Modifier.weight(1f).fillMaxHeight().padding(4.dp)) } }
                         if (row.size == 1) Spacer(Modifier.weight(1f))
                     }
                 }
@@ -295,14 +295,14 @@ private fun ParticipantGrid(room: Room, people: List<Participant>) {
         }
         else -> LazyVerticalGrid(GridCells.Fixed(2), Modifier.fillMaxSize()) {
             items(people, key = { it.identityValue() }) { p ->
-                Tile(room, p, Modifier.aspectRatio(0.8f).padding(4.dp))
+                Tile(room, p, tick, Modifier.aspectRatio(0.8f).padding(4.dp))
             }
         }
     }
 }
 
 @Composable
-private fun ScreenShareStage(room: Room, sharer: Participant, people: List<Participant>) {
+private fun ScreenShareStage(room: Room, sharer: Participant, people: List<Participant>, tick: Int) {
     Column(Modifier.fillMaxSize()) {
         Box(
             Modifier.weight(1f).fillMaxWidth().padding(4.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black),
@@ -321,14 +321,18 @@ private fun ScreenShareStage(room: Room, sharer: Participant, people: List<Parti
         }
         LazyRow(Modifier.height(130.dp).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 0.dp)) {
             items(people, key = { it.identityValue() }) { p ->
-                Tile(room, p, Modifier.width(104.dp).fillMaxHeight().padding(4.dp), compact = true)
+                Tile(room, p, tick, Modifier.width(104.dp).fillMaxHeight().padding(4.dp), compact = true)
             }
         }
     }
 }
 
 @Composable
-private fun Tile(room: Room, p: Participant, modifier: Modifier, compact: Boolean = false) {
+// `tick` is not read here, but it must be a parameter: Compose skips redrawing a
+// tile when its Participant object is the same instance, so without it a
+// camera that turns on after someone joins would never appear.
+@Suppress("UNUSED_PARAMETER")
+private fun Tile(room: Room, p: Participant, tick: Int, modifier: Modifier, compact: Boolean = false) {
     val isLocal = p is LocalParticipant
     val name = p.displayName() + if (isLocal) " (You)" else ""
     val video = p.cameraTrack()
