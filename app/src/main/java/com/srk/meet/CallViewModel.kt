@@ -17,6 +17,7 @@ import io.livekit.android.room.Room
 import io.livekit.android.room.participant.LocalParticipant
 import io.livekit.android.room.participant.Participant
 import io.livekit.android.room.participant.RemoteParticipant
+import io.livekit.android.room.track.RemoteTrackPublication
 import io.livekit.android.room.track.CameraPosition
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
@@ -179,12 +180,59 @@ class CallViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private var admitting = false
+
+    /**
+     * The host let us in. The server gives this same connection permission to
+     * send video, so we just turn on mic/camera — no reconnect (reconnecting with
+     * the same identity left the host showing a stale, video-less tile).
+     * Older servers don't grant permissions; then fall back to reconnecting.
+     */
+    private fun onAdmitted(r: Room) {
+        if (admitting) return
+        if (r.localParticipant.permissions?.canPublish == true) {
+            admitting = true
+            viewModelScope.launch {
+                state = CallState.InCall
+                if (joinedAt == 0L) joinedAt = System.currentTimeMillis()
+                role = "guest"
+                runCatching { r.localParticipant.setMicrophoneEnabled(micOn) }
+                runCatching { r.localParticipant.setCameraEnabled(camOn) }
+                subscribeAll(r)
+                notices.tryEmit("You're in. The host let you join.")
+                admitting = false
+                tick++
+            }
+            return
+        }
+        // Wait briefly for the permission update; if it never comes, use the old path.
+        viewModelScope.launch {
+            delay(4000)
+            if (room === r && state == CallState.Waiting && !admitting) rejoinAsGuest()
+        }
+    }
+
+    /** Make sure we receive everyone's audio and video. */
+    private fun subscribeAll(r: Room) {
+        r.remoteParticipants.values.forEach { p ->
+            p.trackPublications.values.forEach { pub ->
+                (pub as? RemoteTrackPublication)?.let { runCatching { it.setSubscribed(true) } }
+            }
+        }
+    }
+
     // ---------- Room events ----------
 
     private fun onEvent(r: Room, event: RoomEvent) {
         if (r !== room) return
         when (event) {
             is RoomEvent.DataReceived -> handleData(event.data, event.participant, event.topic)
+            is RoomEvent.TrackPublished -> {
+                val pub = event.publication
+                if (pub is RemoteTrackPublication && state == CallState.InCall && pub.track == null) {
+                    runCatching { pub.setSubscribed(true) }
+                }
+            }
             is RoomEvent.ParticipantConnected -> {
                 val p = event.participant
                 when {
@@ -199,7 +247,11 @@ class CallViewModel(app: Application) : AndroidViewModel(app) {
             }
             is RoomEvent.ParticipantMetadataChanged -> {
                 val p = event.participant
-                if (p is LocalParticipant && state == CallState.Waiting && p.role() == "guest") rejoinAsGuest()
+                if (p is LocalParticipant && state == CallState.Waiting && p.role() == "guest") onAdmitted(r)
+            }
+            is RoomEvent.ParticipantPermissionsChanged -> {
+                if (event.participant is LocalParticipant && state == CallState.Waiting &&
+                    r.localParticipant.role() == "guest") onAdmitted(r)
             }
             is RoomEvent.ParticipantAttributesChanged -> {
                 val p = event.participant

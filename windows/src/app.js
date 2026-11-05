@@ -395,6 +395,26 @@ function enterCall() {
   render();
 }
 
+// The host let us in. The server grants this same connection permission to
+// publish, so just switch on mic/camera (reconnecting with the same identity
+// left the host with a stale, video-less tile). Old servers: fall back.
+function onAdmitted(room) {
+  if (call.admitting) return;
+  if (room.localParticipant.permissions && room.localParticipant.permissions.canPublish) {
+    call.admitting = true;
+    call.role = "guest";
+    enterCall();
+    room.localParticipant.setMicrophoneEnabled(pvMicOn).catch(() => toast("Microphone not available"));
+    room.localParticipant.setCameraEnabled(pvCamOn).catch(() => toast("Camera not available"));
+    toast("You're in. The host let you join.");
+    call.admitting = false;
+    return;
+  }
+  setTimeout(() => {
+    if (call.room === room && call.role === "waiting" && !call.admitting) rejoinAsGuest();
+  }, 4000);
+}
+
 async function rejoinAsGuest() {
   if (call.rejoining) return;
   call.rejoining = true;
@@ -427,8 +447,11 @@ function wireRoom(room) {
       render();
     }))
     .on(RoomEvent.ParticipantMetadataChanged, mine((_m, p) => {
-      if (p === room.localParticipant && call.role === "waiting" && roleOf(p) === "guest") rejoinAsGuest();
+      if (p === room.localParticipant && call.role === "waiting" && roleOf(p) === "guest") onAdmitted(room);
       render();
+    }))
+    .on(RoomEvent.ParticipantPermissionsChanged, mine((_prev, p) => {
+      if (p === room.localParticipant && call.role === "waiting" && roleOf(p) === "guest") onAdmitted(room);
     }))
     .on(RoomEvent.ParticipantAttributesChanged, mine((_c, p) => {
       if (handUp(p)) {

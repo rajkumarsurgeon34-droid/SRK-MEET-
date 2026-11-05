@@ -134,7 +134,7 @@ async function handle(request, env) {
   const path = url.pathname.replace(/\/+$/, "") || "/";
 
   if (request.method === "GET") {
-    if (path === "/") return json({ ok: true, service: "srk-meet", configured: !!(env.LIVEKIT_URL && env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET) });
+    if (path === "/") return json({ ok: true, service: "srk-meet", version: 2, configured: !!(env.LIVEKIT_URL && env.LIVEKIT_API_KEY && env.LIVEKIT_API_SECRET) });
     const m = path.match(/^\/j\/([a-z-]+)$/);
     if (m && CODE_RE.test(m[1])) return joinPage(m[1]);
     const c = (url.searchParams.get("c") || "").toLowerCase();
@@ -183,7 +183,11 @@ async function handle(request, env) {
   switch (path) {
     case "/api/admit": {
       if (!ID_RE.test(identity)) throw new HttpError(400, "Invalid participant");
-      await roomService(env, "UpdateParticipant", { room: code, identity, metadata: JSON.stringify({ role: "guest" }) }, code);
+      // Let them in without reconnecting: give the same session full permissions.
+      await roomService(env, "UpdateParticipant", {
+        room: code, identity, metadata: JSON.stringify({ role: "guest" }),
+        permission: { can_subscribe: true, can_publish: true, can_publish_data: true, can_update_metadata: true },
+      }, code);
       return json({ ok: true });
     }
     case "/api/remove": {

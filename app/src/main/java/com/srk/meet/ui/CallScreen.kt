@@ -259,7 +259,7 @@ private fun TopBar(vm: CallViewModel, count: Int, waitingCount: Int, onPeople: (
 
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(vm.title.ifBlank { "Meeting" }, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(vm.title.ifBlank { "Meeting" }, color = Palette.Text, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text("$timer · ${vm.code}", color = Palette.Muted, fontSize = 12.sp)
         }
         IconButton(onClick = { shareText(context, vm.inviteText()) }) { Icon(Icons.Filled.Share, "Invite people") }
