@@ -180,6 +180,45 @@ class CallViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Text for the "Connection details" dialog; null = hidden. */
+    var diagText by mutableStateOf<String?>(null)
+    private val subRequested = mutableSetOf<String>()
+
+    fun showDiagnostics() {
+        val r = room ?: return
+        diagText = buildString {
+            appendLine("SRK Meet ${BuildConfig.VERSION_NAME} · ${r.state}")
+            appendLine("Server: ${prefs.serverUrl}")
+            val lp = r.localParticipant
+            appendLine()
+            appendLine("You: $role · can receive=${lp.permissions?.canSubscribe} · can send=${lp.permissions?.canPublish}")
+            if (lp.trackPublications.isEmpty()) appendLine("  sending nothing")
+            lp.trackPublications.values.forEach { appendLine("  sending ${it.source}${if (it.muted) " (muted)" else ""}") }
+            if (r.remoteParticipants.isEmpty()) appendLine("\nNo one else is connected.")
+            r.remoteParticipants.values.forEach { p ->
+                appendLine()
+                appendLine("${p.displayName()} · ${p.role()}")
+                if (p.trackPublications.isEmpty()) appendLine("  is not sending anything")
+                p.trackPublications.values.forEach { pub ->
+                    val got = if (pub.track != null) "receiving" else "NOT receiving"
+                    appendLine("  ${pub.source}: $got${if (pub.muted) " (muted)" else ""}")
+                }
+            }
+        }
+    }
+
+    /** Ask for every track we're not receiving yet (each one once). */
+    private fun ensureSubscribed(r: Room) {
+        if (state != CallState.InCall) return
+        r.remoteParticipants.values.forEach { p ->
+            if (p.isWaiting()) return@forEach
+            p.trackPublications.values.forEach { pub ->
+                val rp = pub as? RemoteTrackPublication ?: return@forEach
+                if (rp.track == null && subRequested.add("${rp.sid}")) runCatching { rp.setSubscribed(true) }
+            }
+        }
+    }
+
     private var admitting = false
 
     /**
@@ -271,6 +310,7 @@ class CallViewModel(app: Application) : AndroidViewModel(app) {
             }
             else -> Unit
         }
+        ensureSubscribed(r)
         tick++
     }
 
@@ -410,6 +450,8 @@ class CallViewModel(app: Application) : AndroidViewModel(app) {
         eventsJob = null
         room?.let { r -> runCatching { r.disconnect() }; runCatching { r.release() } }
         room = null
+        subRequested.clear()
+        diagText = null
         joinedAt = 0L
         identity = null
         frontCamera = true

@@ -34,7 +34,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -47,6 +49,7 @@ import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.PanTool
 import androidx.compose.material.icons.filled.People
@@ -226,6 +229,16 @@ private fun InCall(vm: CallViewModel, requestScreenShare: () -> Unit) {
                 Sheet.None -> Unit
             }
         }
+    }
+
+    vm.diagText?.let { text ->
+        AlertDialog(
+            onDismissRequest = { vm.diagText = null },
+            title = { Text("Connection details") },
+            text = { Text(text, fontSize = 13.sp, modifier = Modifier.verticalScroll(rememberScrollState())) },
+            confirmButton = { TextButton(onClick = { vm.showDiagnostics() }) { Text("Refresh") } },
+            dismissButton = { TextButton(onClick = { vm.diagText = null }) { Text("Close") } },
+        )
     }
 
     if (confirmLeave) {
@@ -578,6 +591,7 @@ private fun MoreSheet(vm: CallViewModel, local: LocalParticipant, onPeople: () -
             vm.notices.tryEmit("Code copied")
             onDone() }
         MenuRow(Icons.Filled.Share, "Invite people") { shareText(context, vm.inviteText()); onDone() }
+        MenuRow(Icons.Filled.Info, "Connection details") { vm.showDiagnostics(); onDone() }
         if (vm.isHost) {
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
             Text("Host controls", color = Palette.Muted, fontSize = 13.sp)
